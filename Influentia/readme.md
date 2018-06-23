@@ -15,6 +15,7 @@ Repository for Lepus' Influentia project @ Method Data Science
 ## Articles
 - [A review of influenza detection and prediction through social networking sites](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5793414/pdf/12976_2017_Article_74.pdf)
 ## Useful Links
+- [Flu-Prediction](https://github.com/svetvaz/Flu-Prediction)
 - [CDC Epidemic Prediction Initiative](https://github.com/cdcepi)
 - [What we can learn from the epic failure of google flu trends](https://www.wired.com/2015/10/can-learn-epic-failure-google-flu-trends/)
 - [Columbia Prediction of Infectious Diseases](http://cpid.iri.columbia.edu/)
