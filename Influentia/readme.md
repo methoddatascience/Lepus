@@ -13,7 +13,7 @@ Repository for Lepus' Influentia project @ Method Data Science
 - [CDC flu hospitalizations by week/state](https://gis.cdc.gov/GRASP/Fluview/FluHospRates.html)
 - [WHO surveillance by week/country](http://apps.who.int/flumart/Default?ReportNo=12)
 ## Articles
--[Flu and weather](https://askabiologist.asu.edu/plosable/does-flu-virus-prefer-cold-weather)
+- [Flu and weather](https://askabiologist.asu.edu/plosable/does-flu-virus-prefer-cold-weather)
 - [A review of influenza detection and prediction through social networking sites](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5793414/pdf/12976_2017_Article_74.pdf)
 ## Useful Links
 - [Flu-Prediction](https://github.com/svetvaz/Flu-Prediction)
