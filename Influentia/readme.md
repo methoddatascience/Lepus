@@ -22,3 +22,4 @@ Repository for Lepus' Influentia project @ Method Data Science
 - [Columbia Prediction of Infectious Diseases](http://cpid.iri.columbia.edu/)
 - [Influenzanet Publications](https://www.influenzanet.eu/en/publications/)
 - [Fluoutlook Methodology](https://fluoutlook.org/methodology.html)
+- [FluSight Forecasts](https://github.com/cdcepi/FluSight-forecasts)
