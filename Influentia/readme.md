@@ -23,3 +23,6 @@ Repository for Lepus' Influentia project @ Method Data Science
 - [Influenzanet Publications](https://www.influenzanet.eu/en/publications/)
 - [Fluoutlook Methodology](https://fluoutlook.org/methodology.html)
 - [FluSight Forecasts](https://github.com/cdcepi/FluSight-forecasts)
+
+##Others
+- [GUI for GitHub](https://desktop.github.com/)
