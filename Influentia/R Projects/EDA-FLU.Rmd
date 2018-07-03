@@ -2,8 +2,57 @@
 title: "EDA FLU"
 output: html_notebook
 ---
+```{r}
+library(dplyr)
+```
 
 
 ```{r}
-plot(cars)
+DF_AgeViewByWeek <- read.csv('input\\AgeViewByWeek.csv')
+DF_ILINet <- read.csv('input\\ILINet.csv')
 ```
+
+```{r}
+head(DF_AgeViewByWeek, n = 5)
+head(DF_ILINet, n = 5)
+```
+```{r}
+colnames(DF_AgeViewByWeek)
+```
+
+```{r}
+colnames(DF_ILINet)
+```
+
+```{r}
+DF_AgeViewByWeek[DF_AgeViewByWeek=="X"] <-NA
+DF_ILINet[DF_ILINet=="X"] <-NA
+```
+
+```{r}
+drops <- c("AGE.0.4","AGE.25.49","AGE.25.64","AGE.5.24","AGE.65","AGE.50.64","X..WEIGHTED.ILI")
+DF_ILINet <- DF_ILINet[ , !(names(DF_ILINet) %in% drops)]
+```
+
+```{r}
+apply(DF_ILINet, 2, function(col)sum(is.na(col))/length(col))
+```
+
+```{r}
+apply(DF_AgeViewByWeek, 2, function(col)sum(is.na(col))/length(col))
+```
+
+Preprocessing 
+
+```{r}
+DF_AgeViewByWeek$Totals <- rowSums(DF_AgeViewByWeek[,4:12], na.rm=TRUE)
+DF_AgeViewByWeek[4:12] <- NULL 
+```
+
+```{r}
+DF_AgeViewByWeek<-DF_AgeViewByWeek[!DF_AgeViewByWeek$Age.Group!="0-4 yr",]
+
+DF_AgeViewByWeek <- DF_AgeViewByWeek[!DF_AgeViewByWeek$Week >= 53,]
+```
+
+
