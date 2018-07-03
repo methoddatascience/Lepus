@@ -4,6 +4,10 @@ output: html_notebook
 ---
 ```{r}
 library(dplyr)
+library(lubridate)
+library(plotly)
+library(forecast)
+library(lubridate)
 ```
 
 
@@ -54,5 +58,22 @@ DF_AgeViewByWeek<-DF_AgeViewByWeek[!DF_AgeViewByWeek$Age.Group!="0-4 yr",]
 
 DF_AgeViewByWeek <- DF_AgeViewByWeek[!DF_AgeViewByWeek$Week >= 53,]
 ```
+
+Here we can filter by month, year easily using lubridate
+```{r}
+DF_AgeViewByWeek$Date <- as.Date(paste(DF_AgeViewByWeek$Year, DF_AgeViewByWeek$Week, 1, sep="-"), "%Y-%U-%u")
+DF_AgeViewByWeek$Date<- as.POSIXct(DF_AgeViewByWeek$Date)
+
+```
+
+Weekly frequency
+```{r}
+tsTotalsByAge <- ts(DF_AgeViewByWeek$Totals, frequency=52, start=c(1993,1))
+
+autoplot(tsTotalsByAge)
+```
+
+
+
 
 
