@@ -1,0 +1,9 @@
+---
+title: "EDA FLU"
+output: html_notebook
+---
+
+
+```{r}
+plot(cars)
+```
