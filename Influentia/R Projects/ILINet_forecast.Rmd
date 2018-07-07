@@ -1,0 +1,68 @@
+---
+title: "ILINet Forecast"
+output: html_notebook
+---
+## Setting up libraries
+```{r}
+library(tidyverse)
+library(rlist)
+library(prophet)
+```
+## Loading Train/Test data
+```{r}
+train <- readRDS('data/train.rds')
+test  <- readRDS('data/test.rds')
+```
+## Data split by state for individual predictions
+Assuming that different States have different behaviour regarding Flu cycles because of latitude and longitude differences, we'll fit a model to each one.
+```{r tidy=FALSE}
+data_split <- function(data){
+    
+  data_sp <- lapply(
+    unique(data$REGION), 
+    function(x) data[data$REGION == x,]
+  )
+}
+
+test_split  <- data_split(test)
+train_split <- data_split(train)
+```
+## Forecasting
+The Prophet library takes as input a dataframe with two variables: **ds** for the dates in the format YYYY-MM-DD and **y** for the numeric value.
+
+```{r echo=T, results='hide', tidy=FALSE}
+models    <- list()
+forecasts <- list()
+
+for(state_df in train_split){
+  model <-state_df %>% 
+    select(ds = PRETTYDATE, y = ILITOTAL) %>% 
+    prophet(
+      yearly.seasonality = TRUE, 
+      weekly.seasonality = TRUE, 
+      daily.seasonality = FALSE
+    )
+  
+  future <- make_future_dataframe(
+    model, 
+    periods = 4, 
+    freq = 'week'
+  )
+  
+  pred <- predict(model, future)
+  
+  models[unique(state_df$REGION)] <- list(model)
+  forecasts[unique(state_df$REGION)] <- list(pred)
+}
+```
+```{r}
+plot_forecast <- function(state = 'Alabama'){
+  plot(
+    models[[state]], 
+    forecasts[[state]]
+  )
+}
+
+plot_forecast('Arizona')
+```
+
