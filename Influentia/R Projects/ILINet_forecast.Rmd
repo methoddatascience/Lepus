@@ -5,7 +5,6 @@ output: html_notebook
 ## Setting up libraries
 ```{r}
 library(tidyverse)
-library(rlist)
 library(prophet)
 ```
 ## Loading Train/Test data
@@ -55,6 +54,7 @@ for(state_df in train_split){
   forecasts[unique(state_df$REGION)] <- list(pred)
 }
 ```
+## Results (This function plots for the selected state)
 ```{r}
 plot_forecast <- function(state = 'Alabama'){
   plot(
@@ -62,7 +62,12 @@ plot_forecast <- function(state = 'Alabama'){
     forecasts[[state]]
   )
 }
+```
 
+```{r}
 plot_forecast('Arizona')
+```
+```{r include=FALSE}
+rm(future, model, pred, state_df, test, train); gc()
 ```
 
