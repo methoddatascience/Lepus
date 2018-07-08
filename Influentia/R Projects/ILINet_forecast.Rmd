@@ -4,8 +4,12 @@ output: html_notebook
 ---
 ## Setting up libraries
 ```{r}
+library(forecast)
+library(lubridate)
 library(tidyverse)
 library(prophet)
+library(Metrics)
+
 ```
 ## Loading Train/Test data
 ```{r}
@@ -26,13 +30,14 @@ data_split <- function(data){
 test_split  <- data_split(test)
 train_split <- data_split(train)
 ```
+
+
 ## Forecasting
 The Prophet library takes as input a dataframe with two variables: **ds** for the dates in the format YYYY-MM-DD and **y** for the numeric value.
 
 ```{r echo=T, results='hide', tidy=FALSE}
-models    <- list()
-forecasts <- list()
-
+models_profet    <- list()
+forecasts_profet <- list()
 for(state_df in train_split){
   model <-state_df %>% 
     select(ds = PRETTYDATE, y = ILITOTAL) %>% 
@@ -47,27 +52,100 @@ for(state_df in train_split){
     periods = 4, 
     freq = 'week'
   )
-  
   pred <- predict(model, future)
-  
-  models[unique(state_df$REGION)] <- list(model)
-  forecasts[unique(state_df$REGION)] <- list(pred)
+
+  models_profet[unique(state_df$REGION)] <- list(model)
+  forecasts_profet[unique(state_df$REGION)] <- list(pred)
 }
+
 ```
+
+
+
 ## Results (This function plots for the selected state)
 ```{r}
-plot_forecast <- function(state = 'Alabama'){
+plot_forecast <- function(state = 'Virginia'){
   plot(
-    models[[state]], 
-    forecasts[[state]]
+    models_profet[[state]], 
+    forecasts_profet[[state]]
   )
 }
 ```
 
 ```{r}
-plot_forecast('Arizona')
+plot_forecast('Virginia')
 ```
+```{r}
+x<-test_split[[1]]$ILITOTAL
+y<-
+rmse(test_split[[1]]$ILITOTAL,forecasts_profet[['Alabama']]$yhat)
+```
+
+
+## Forecasting
+ARIMA 
+
+```{r echo=T, results='hide', tidy=FALSE}
+models_auto_arima    <- list()
+forecasts_auto_arima <- list()
+counter <-1
+for(state_df in train_split){
+  model <-
+    auto.arima(
+        ts(state_df$ILITOTAL,
+           frequency=52,
+           start=decimal_date(ymd("2010-10-04")))
+        )
+  
+  pred <- forecast(model,h=4)
+    
+  models_auto_arima[unique(state_df$REGION)] <- list(model)
+  forecasts_auto_arima[unique(state_df$REGION)] <- list(pred)
+}
+```
+
+```{r}
+saveRDS(models_auto_arima, 'data/models_arima.rds')
+saveRDS(forecasts_auto_arima, 'data/forecasts_arima.rds')
+```
+
+
+
+## Results (This function plots for the selected state) for Arima , break is something ugly to do. 
+
+##Try to plot it using funggcast but it doesn't support weekly ts
+
+```{r}
+plot_forecast <- function(state){
+  for(state_df in train_split){
+    if(state_df$REGION==state){
+      temporal_state_df = state_df
+      break
+    }
+  }
+   plot(ts(temporal_state_df$ILITOTAL,frequency=52, start=c(2010,40), end=c(2018,20)))
+   lines(fitted(models_auto_arima[[state]]), col='red')
+      
+}
+plot_forecast('Alabama')
+
+
+```
+
+##Accuracy
+
+
+```{r}
+ mape(train_split[[1]]$ILITOTAL, forecasts_auto_arima[['Alabama']]$fitted)
+```
+
+
+
+
+
+
+
+
 ```{r include=FALSE}
 rm(future, model, pred, state_df, test, train); gc()
 ```
-
