@@ -61,10 +61,9 @@ for(state_df in train_split){
 ```
 
 
-
 ## Results (This function plots for the selected state)
 ```{r}
-plot_forecast <- function(state = 'Virginia'){
+plot_forecast_prophet <- function(state){
   plot(
     models_profet[[state]], 
     forecasts_profet[[state]]
@@ -73,16 +72,11 @@ plot_forecast <- function(state = 'Virginia'){
 ```
 
 ```{r}
-plot_forecast('Virginia')
-```
-```{r}
-x<-test_split[[1]]$ILITOTAL
-y<-
-rmse(test_split[[1]]$ILITOTAL,forecasts_profet[['Alabama']]$yhat)
+plot_forecast_prophet('Montana')
 ```
 
 
-## Forecasting
+## Forecasting using auto-arima since configure ARIMA one by one is difficult 
 ARIMA 
 
 ```{r echo=T, results='hide', tidy=FALSE}
@@ -116,7 +110,7 @@ saveRDS(forecasts_auto_arima, 'data/forecasts_arima.rds')
 ##Try to plot it using funggcast but it doesn't support weekly ts
 
 ```{r}
-plot_forecast <- function(state){
+plot_forecast_auto_arima <- function(state){
   for(state_df in train_split){
     if(state_df$REGION==state){
       temporal_state_df = state_df
@@ -127,25 +121,57 @@ plot_forecast <- function(state){
    lines(fitted(models_auto_arima[[state]]), col='red')
       
 }
-plot_forecast('Alabama')
+plot_forecast_auto_arima('Montana')
 
 
 ```
 
-##Accuracy
+##Accuracy using test data -  4 weeks is insufficient to be significant 
 
 
 ```{r}
- mape(train_split[[1]]$ILITOTAL, forecasts_auto_arima[['Alabama']]$fitted)
+
+mase_dict_test <- list()
+counter = 1;
+for (state_name in names(models_auto_arima)){
+  predicted_profet <-mase(test_split[[counter]]$ILITOTAL,tail(forecasts_profet[[state_name]]$yhat,4))
+  predicted_auto_arima <-mase(test_split[[counter]]$ILITOTAL,tail(forecasts_auto_arima[[state_name]]$fitted,4))
+  
+  if(predicted_profet < predicted_auto_arima){
+    mase_dict_test[[paste(state_name, "profet", sep="-")]]<- c( predicted_auto_arima ,predicted_profet)
+  }else{
+    mase_dict_test[[paste(state_name, "arima", sep="-")]] <-c( predicted_auto_arima ,predicted_profet)
+  }
+  counter = counter +1
+}
+mase_dict_test
+
 ```
 
+##Accuracy using train data 
+ 
+```{r}
 
+mase_dict_train <- list()
+counter = 1;
+for (state_name in names(models_auto_arima)){
+  lenghtOfSet = length(forecasts_profet[[state_name]]$yhat)
+  predicted_profet <-mase(train_split[[counter]]$ILITOTAL,head(forecasts_profet[[state_name]]$yhat,lenghtOfSet-4))
+  predicted_auto_arima <-mase(train_split[[counter]]$ILITOTAL,head(forecasts_auto_arima[[state_name]]$fitted,lenghtOfSet-4))
+  
+  if(predicted_profet < predicted_auto_arima){
+    mase_dict_train[[paste(state_name, "profet", sep="-")]]<- c( predicted_auto_arima ,predicted_profet)
+  }else{
+    mase_dict_train[[paste(state_name, "arima", sep="-")]] <- c( predicted_auto_arima ,predicted_profet)
+  }
+  counter = counter +1
+}
+mase_dict_train
 
-
-
+```
 
 
 
 ```{r include=FALSE}
-rm(future, model, pred, state_df, test, train); gc()
+rm(future, model, pred, state_df, test, train, actual, predicted_auto_arima, predicted_profet, x,y); gc()
 ```
