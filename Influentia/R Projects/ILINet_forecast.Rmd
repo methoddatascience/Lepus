@@ -1,0 +1,180 @@
+---
+title: "ILINet Forecast"
+output: html_notebook
+---
+## Setting up libraries
+```{r}
+library(forecast)
+library(lubridate)
+library(tidyverse)
+library(prophet)
+library(Metrics)
+
+```
+## Loading Train/Test data
+```{r}
+train <- readRDS('data/train.rds')
+test  <- readRDS('data/test.rds')
+```
+## Data split by state for individual predictions
+Assuming that different States have different behaviour regarding Flu cycles because of latitude and longitude differences, we'll fit a model to each one.
+```{r tidy=FALSE}
+data_split <- function(data){
+    
+  data_sp <- lapply(
+    unique(data$REGION), 
+    function(x) data[data$REGION == x,]
+  )
+}
+
+test_split  <- data_split(test)
+train_split <- data_split(train)
+```
+
+
+## Forecasting
+The Prophet library takes as input a dataframe with two variables: **ds** for the dates in the format YYYY-MM-DD and **y** for the numeric value.
+
+```{r echo=T, results='hide', tidy=FALSE}
+models_profet    <- list()
+forecasts_profet <- list()
+for(state_df in train_split){
+  model <-state_df %>% 
+    select(ds = PRETTYDATE, y = ILITOTAL) %>% 
+    prophet(
+      yearly.seasonality = TRUE, 
+      weekly.seasonality = TRUE, 
+      daily.seasonality = FALSE
+    )
+  
+  future <- make_future_dataframe(
+    model, 
+    periods = 4, 
+    freq = 'week'
+  )
+  pred <- predict(model, future)
+
+  models_profet[unique(state_df$REGION)] <- list(model)
+  forecasts_profet[unique(state_df$REGION)] <- list(pred)
+}
+
+```
+
+
+## Results (This function plots for the selected state)
+```{r}
+plot_forecast_prophet <- function(state){
+  plot(
+    models_profet[[state]], 
+    forecasts_profet[[state]]
+  )
+}
+```
+
+```{r}
+plot_forecast_prophet('Montana')
+```
+
+
+## Forecasting using auto-arima since configure ARIMA one by one is difficult 
+ARIMA 
+
+```{r echo=T, results='hide', tidy=FALSE}
+models_auto_arima    <- list()
+forecasts_auto_arima <- list()
+counter <-1
+for(state_df in train_split){
+  model <-
+    auto.arima(
+        ts(state_df$ILITOTAL,
+           frequency=52,
+           start=decimal_date(ymd("2010-10-04")))
+        )
+  
+  pred <- forecast(model,h=4)
+    
+  models_auto_arima[unique(state_df$REGION)] <- list(model)
+  forecasts_auto_arima[unique(state_df$REGION)] <- list(pred)
+}
+```
+
+```{r}
+saveRDS(models_auto_arima, 'data/models_arima.rds')
+saveRDS(forecasts_auto_arima, 'data/forecasts_arima.rds')
+```
+
+```{r}
+models_auto_arima <- readRDS('data/models_arima.rds')
+forecasts_auto_arima <- readRDS('data/forecasts_arima.rds')
+```
+
+## Results (This function plots for the selected state) for Arima , break is something ugly to do. 
+
+##Try to plot it using funggcast but it doesn't support weekly ts
+
+```{r}
+plot_forecast_auto_arima <- function(state){
+  for(state_df in train_split){
+    if(state_df$REGION==state){
+      temporal_state_df = state_df
+      break
+    }
+  }
+   plot(ts(temporal_state_df$ILITOTAL,frequency=52, start=c(2010,40), end=c(2018,20)))
+   lines(fitted(models_auto_arima[[state]]), col='red')
+      
+}
+plot_forecast_auto_arima('Colorado')
+
+
+```
+
+##Accuracy using test data -  4 weeks is insufficient to be significant 
+
+
+```{r}
+
+mase_dict_test <- list()
+counter = 1;
+for (state_name in names(models_auto_arima)){
+  predicted_profet <-mase(test_split[[counter]]$ILITOTAL,tail(forecasts_profet[[state_name]]$yhat,4))
+  predicted_auto_arima <-mase(test_split[[counter]]$ILITOTAL,tail(forecasts_auto_arima[[state_name]]$fitted,4))
+  
+  if(predicted_profet < predicted_auto_arima){
+    mase_dict_test[[paste(state_name, "profet", sep="-")]]<- c( predicted_auto_arima ,predicted_profet)
+  }else{
+    mase_dict_test[[paste(state_name, "arima", sep="-")]] <-c( predicted_auto_arima ,predicted_profet)
+  }
+  counter = counter +1
+}
+mase_dict_test
+
+```
+
+##Accuracy using train data 
+ 
+```{r}
+
+mase_dict_train <- list()
+counter = 1;
+for (state_name in names(models_auto_arima)){
+  lenghtOfSet = length(forecasts_profet[[state_name]]$yhat)
+  predicted_profet <-mase(train_split[[counter]]$ILITOTAL,head(forecasts_profet[[state_name]]$yhat,lenghtOfSet-4))
+  predicted_auto_arima <-mase(train_split[[counter]]$ILITOTAL,head(forecasts_auto_arima[[state_name]]$fitted,lenghtOfSet-4))
+  
+  if(predicted_profet < predicted_auto_arima){
+    mase_dict_train[[paste(state_name, "profet", sep="-")]]<- c( predicted_auto_arima ,predicted_profet)
+  }else{
+    mase_dict_train[[paste(state_name, "arima", sep="-")]] <- c( predicted_auto_arima ,predicted_profet)
+  }
+  counter = counter +1
+}
+mase_dict_train
+
+```
+
+
+
+```{r include=FALSE}
+rm(future, model, pred, state_df, test, train, actual, predicted_auto_arima, predicted_profet, x,y); gc()
+```
