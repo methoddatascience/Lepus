@@ -103,7 +103,10 @@ saveRDS(models_auto_arima, 'data/models_arima.rds')
 saveRDS(forecasts_auto_arima, 'data/forecasts_arima.rds')
 ```
 
-
+```{r}
+models_auto_arima <- readRDS('data/models_arima.rds')
+forecasts_auto_arima <- readRDS('data/forecasts_arima.rds')
+```
 
 ## Results (This function plots for the selected state) for Arima , break is something ugly to do. 
 
@@ -121,7 +124,7 @@ plot_forecast_auto_arima <- function(state){
    lines(fitted(models_auto_arima[[state]]), col='red')
       
 }
-plot_forecast_auto_arima('Montana')
+plot_forecast_auto_arima('Colorado')
 
 
 ```
