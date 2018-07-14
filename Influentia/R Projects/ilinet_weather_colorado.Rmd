@@ -1,0 +1,89 @@
+---
+title: "ILINet + Weather Colorado Regression Model"
+output: html_notebook
+---
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(scales)
+library(lubridate)
+library(caret)
+```
+# Data Loading ----
+
+```{r}
+colorado_weather <- read_csv('input/Colorado-Station-Report.csv') %>% 
+  select(-STATION, -NAME)
+
+ilinet_colorado <- readRDS('data/train.rds') %>% 
+  filter(REGION == 'Colorado')
+```
+# Time series visualization ----
+
+```{r}
+colorado_weather %>% 
+  select(-DATE) %>% 
+  mutate_all(
+    funs(rescale, "rescale", rescale(., to = c(0, 1)))
+  ) %>% 
+  select(contains('rescale')) %>% 
+  ts.plot(col = c('blue', 'red', 'green'))
+```
+
+
+```{r}
+ilinet_colorado %>% 
+  select(-REGION, -YEAR, -WEEK, -YEARWEEK, -PRETTYDATE) %>% 
+  mutate_all(
+    funs(rescale, "rescale", rescale(., to = c(0, 1)))
+  ) %>% 
+  select(contains('rescale')) %>% 
+  ts.plot(col = c('blue', 'red', 'green', 'black'))
+```
+# Preprocessing ----
+
+```{r}
+train <- ilinet_colorado %>% 
+  mutate(
+    MONTH = lubridate::month(PRETTYDATE)
+  ) %>% 
+  left_join(
+    colorado_weather %>% 
+      rowwise() %>% 
+      mutate(
+        YEAR  = as.integer(str_split(DATE, pattern = '-', simplify = TRUE)[1]),
+        MONTH = as.integer(str_split(DATE, pattern = '-', simplify = TRUE)[2])
+      ) %>% 
+      select(-DATE), 
+    by = c("YEAR", "MONTH")
+  ) %>% 
+  mutate(
+    RESPONSE = lead(ILITOTAL, n = 1)
+  ) %>%
+  select(ILITOTAL, `TOTAL PATIENTS`, PRCP, SNOW, TAVG, RESPONSE)
+```
+# Train / Test ----
+
+```{r}
+test  <- train[391:397, ]
+train <- train[1:390, ]
+```
+# Regression Model ----
+
+```{r}
+model <- glm(RESPONSE ~ ., data = train)
+```
+# Predictions ----
+
+```{r}
+prediction <- as.integer(predict(model, newdata = test[, 1:5]))
+```
+
+
+```{r}
+# Metrics ----
+RMSE(prediction, test$RESPONSE, na.rm = TRUE)
+
+print(prediction)
+print(test$RESPONSE)
+```
