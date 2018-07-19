@@ -8,6 +8,7 @@ library(ggplot2)
 library(scales)
 library(lubridate)
 library(caret)
+library(Matrix)
 ```
 # Data Loading ----
 
@@ -30,6 +31,10 @@ colorado_weather %>%
   ts.plot(col = c('blue', 'red', 'green'))
 ```
 
+```{r}
+colorado_weather
+```
+
 
 ```{r}
 ilinet_colorado %>% 
@@ -40,6 +45,11 @@ ilinet_colorado %>%
   select(contains('rescale')) %>% 
   ts.plot(col = c('blue', 'red', 'green', 'black'))
 ```
+```{r}
+ilinet_colorado
+```
+
+
 # Preprocessing ----
 
 ```{r}
@@ -60,7 +70,7 @@ train <- ilinet_colorado %>%
   mutate(
     RESPONSE = lead(ILITOTAL, n = 1)
   ) %>%
-  select(ILITOTAL, `TOTAL PATIENTS`, PRCP, SNOW, TAVG, RESPONSE)
+  select(ILITOTAL, PRCP, SNOW, TAVG, RESPONSE)
 ```
 # Train / Test ----
 
@@ -73,6 +83,11 @@ train <- train[1:390, ]
 ```{r}
 model <- glm(RESPONSE ~ ., data = train)
 ```
+
+```{r}
+model
+```
+
 # Predictions ----
 
 ```{r}
@@ -83,7 +98,57 @@ prediction <- as.integer(predict(model, newdata = test[, 1:5]))
 ```{r}
 # Metrics ----
 RMSE(prediction, test$RESPONSE, na.rm = TRUE)
-
 print(prediction)
 print(test$RESPONSE)
 ```
+
+# Regression Model ----
+```{r}
+h2o.init()
+```
+
+```{r}
+y <- "RESPONSE"
+x <- setdiff(names(train), y)
+h2oFrameTraining=as.h2o(train)
+aml <- h2o.automl(x = x, y = y,
+                  training_frame = h2oFrameTraining,
+                  max_runtime_secs = 3600)
+
+```
+# Predictions ----
+
+```{r}
+lb <- aml@leaderboard
+lb
+```
+
+
+
+```{r}
+library(xgboost)
+```
+
+```{r}
+dtrain <- xgb.DMatrix(data = data.matrix(train), label= train$RESPONSE)
+dtest <- xgb.DMatrix(data = data.matrix(test), label= test$RESPONSE)
+```
+
+
+```{r}
+modelXg <- xgboost(data = dtrain, # the data   
+                 max.depth = 3, # the maximum depth of each decision tree
+                 nround = 10, # number of boosting rounds
+                 early_stopping_rounds = 3, # if we dont see an improvement in this many rounds, stop
+                 objective = "reg:linear", # the objective function
+                 gamma = 1) # add a regularization term
+
+```
+
+```{r}
+pred <- predict(modelXg, dtest)
+RMSE(pred, test$RESPONSE, na.rm = TRUE)
+print(pred)
+print(test$RESPONSE)
+```
+
