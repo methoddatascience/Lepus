@@ -18,6 +18,8 @@ colorado_weather <- read_csv('input/Colorado-Station-Report.csv') %>%
 
 ilinet_colorado <- readRDS('data/train.rds') %>% 
   filter(REGION == 'Colorado')
+
+ilinet_arima <- readRDS('data/forecasts_arima.rds')$Colorado$fitted
 ```
 # Time series visualization ----
 
@@ -57,6 +59,7 @@ train <- ilinet_colorado %>%
   mutate(
     MONTH = lubridate::month(PRETTYDATE)
   ) %>% 
+  bind_cols(as.tibble(ilinet_arima)) %>% 
   left_join(
     colorado_weather %>% 
       rowwise() %>% 
@@ -70,7 +73,7 @@ train <- ilinet_colorado %>%
   mutate(
     RESPONSE = lead(ILITOTAL, n = 1)
   ) %>%
-  select(ILITOTAL, PRCP, SNOW, TAVG, RESPONSE)
+  select(ILITOTAL, PRCP, SNOW, TAVG, ARIMA = x, RESPONSE)
 ```
 # Train / Test ----
 
@@ -146,7 +149,7 @@ modelXg <- xgboost(data = dtrain, # the data
 ```
 
 ```{r}
-pred <- predict(modelXg, dtest)
+pred <- as.integer(predict(modelXg, dtest))
 RMSE(pred, test$RESPONSE, na.rm = TRUE)
 print(pred)
 print(test$RESPONSE)

@@ -72,7 +72,7 @@ plot_forecast_prophet <- function(state){
 ```
 
 ```{r}
-plot_forecast_prophet('Montana')
+plot_forecast_prophet('New York')
 ```
 
 
